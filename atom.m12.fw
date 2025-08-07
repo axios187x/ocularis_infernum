@@ -1,0 +1,98 @@
+#include "esp_camera.h"
+#include "HardwareSerial.h"
+
+// Define the camera pins for the M5AtomS3R-M12
+#define CAM_PIN_PWDN -1
+#define CAM_PIN_RESET -1
+#define CAM_PIN_XCLK 21
+#define CAM_PIN_SIOD 12
+#define CAM_PIN_SIOC 9
+#define CAM_PIN_D7 13
+#define CAM_PIN_D6 11
+#define CAM_PIN_D5 17
+#define CAM_PIN_D4 4
+#define CAM_PIN_D3 48
+#define CAM_PIN_D2 46
+#define CAM_PIN_D1 42
+#define CAM_PIN_D0 3
+#define CAM_PIN_VSYNC 10
+#define CAM_PIN_HREF 14
+#define CAM_PIN_PCLK 16
+
+// Use UART1 for the Grove port on pins G1(RX) and G2(TX)
+HardwareSerial SerialGrove(1);
+
+const uint8_t START_MARKER[] = {0xFF, 0xD8, 0xFF, 0xE1}; // Custom start marker for our protocol
+
+void setup() {
+    // Initialize the main serial port for debugging
+    Serial.begin(115200);
+    Serial.println("M5 Atom S3R M12 Serial Camera Firmware Starting...");
+
+    // Initialize the Grove serial port. G1 is RX, G2 is TX.
+    // Baud rate must match the M5Core2's listening rate.
+    SerialGrove.begin(115200, SERIAL_8N1, 1, 2);
+
+    // Camera configuration
+    camera_config_t config;
+    config.ledc_channel = LEDC_CHANNEL_0;
+    config.ledc_timer = LEDC_TIMER_0;
+    config.pin_d0 = CAM_PIN_D0;
+    config.pin_d1 = CAM_PIN_D1;
+    config.pin_d2 = CAM_PIN_D2;
+    config.pin_d3 = CAM_PIN_D3;
+    config.pin_d4 = CAM_PIN_D4;
+    config.pin_d5 = CAM_PIN_D5;
+    config.pin_d6 = CAM_PIN_D6;
+    config.pin_d7 = CAM_PIN_D7;
+    config.pin_xclk = CAM_PIN_XCLK;
+    config.pin_pclk = CAM_PIN_PCLK;
+    config.pin_vsync = CAM_PIN_VSYNC;
+    config.pin_href = CAM_PIN_HREF;
+    config.pin_sccb_sda = CAM_PIN_SIOD;
+    config.pin_sccb_scl = CAM_PIN_SIOC;
+    config.pin_pwdn = CAM_PIN_PWDN;
+    config.pin_reset = CAM_PIN_RESET;
+    config.xclk_freq_hz = 20000000;
+    config.pixel_format = PIXFORMAT_JPEG;
+    config.frame_size = FRAMESIZE_QVGA; // 320x240 - good for streaming
+    config.jpeg_quality = 12; // 0-63, lower is higher quality
+    config.fb_count = 1;
+    config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+
+    // Initialize the camera
+    esp_err_t err = esp_camera_init(&config);
+    if (err != ESP_OK) {
+        Serial.printf("Camera init failed with error 0x%x", err);
+        return;
+    }
+    Serial.println("Camera initialized successfully.");
+}
+
+void loop() {
+    // Capture a frame from the camera
+    camera_fb_t * fb = esp_camera_fb_get();
+    if (!fb) {
+        Serial.println("Camera capture failed");
+        delay(1000);
+        return;
+    }
+
+    // --- Send frame over Grove serial port ---
+
+    // 1. Send the start marker
+    SerialGrove.write(START_MARKER, sizeof(START_MARKER));
+
+    // 2. Send the 4-byte frame length
+    uint32_t len = fb->len;
+    SerialGrove.write((uint8_t *)&len, sizeof(len));
+
+    // 3. Send the actual JPEG data
+    SerialGrove.write(fb->buf, fb->len);
+
+    // Return the frame buffer to be reused
+    esp_camera_fb_return(fb);
+
+    // Add a small delay to control the frame rate
+    delay(100);
+}
