@@ -1,0 +1,18 @@
+Start program
+Initialize mercury switch, accelerometer, and ultrasonic sensor
+
+Loop forever:
+    If mercury switch is triggered:
+        Log "Tilt detected"
+        Trigger tamper alert
+
+    If accelerometer detects motion above threshold:
+        Log "Motion detected"
+        Trigger tamper alert
+
+    If ultrasonic sensor detects object within 30cm:
+        Log "Proximity alert"
+        Trigger tamper alert
+
+    Wait briefly before next check
+End loop
