@@ -1,0 +1,29 @@
++------------------------------------------------------+
+|                EXODUS Detection Node                 |
+|------------------------------------------------------|
+|                                                      |
+|  [Power In]                                          |
+|     |                                                |
+|     v                                                |
+|  +----------------------+                            |
+|  | MCU (ESP32 / STM32) |<----------------------+     |
+|  +----------------------+                     |     |
+|     |        |        |                       |     |
+|     |        |        |                       |     |
+|     v        v        v                       |     |
+| [Mercury] [Accel] [Ultrasonic]                |     |
+|   Tilt     Motion     Range                   |     |
+|   Sensor   Sensor     Sensor                  |     |
+|     |        |        |                       |     |
+|     +--------+--------+--> Sensor Fusion Logic|     |
+|                                |              |     |
+|                                v              |     |
+|                      Tamper Detection Routine |     |
+|                                |              |     |
+|                                v              |     |
+|                      Interrupt + Logging      |     |
+|                                |              |     |
+|                                v              |     |
+|                      Alert / Comms Module     |     |
+|                      (LoRa / WiFi / BLE)      |     |
++------------------------------------------------------+
